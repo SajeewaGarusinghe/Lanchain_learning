@@ -1,0 +1,29 @@
+# Core LangChain framework for building LLM applications
+langchain
+
+# Jupyter kernel for running notebooks (uncomment if needed)
+# ipykernel
+
+# Load environment variables from .env files (API keys, secrets)
+python-dotenv
+
+# Community integrations for LangChain (document loaders, vector stores, etc.)
+langchain_community
+
+# PDF document loader - extracts text from PDF files
+pypdf
+
+# BeautifulSoup4 - HTML/XML parsing for web scraping and HTML document loading
+bs4 
+
+# Load research papers from arXiv repository
+arxiv
+
+# PyMuPDF - Advanced PDF processing with better text extraction and formatting
+pymupdf
+
+# Load content from Wikipedia articles
+wikipedia
+
+# Twitter API client - for loading tweets (used in tweetloader notebook)
+tweepy
