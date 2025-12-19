@@ -4,6 +4,8 @@
 
 Welcome to the **Vector Stores** module! This section covers how to store and retrieve document embeddings efficiently using vector databases - a crucial component for building semantic search and RAG (Retrieval Augmented Generation) applications.
 
+> 💡 **From the Instructor**: *"Two of the most common things that we use which are completely open source are FAISS and Chroma. As we go ahead, when we develop end-to-end projects, we'll be seeing new DBs like Cassandra DB, Astra DB, and Pinecone - which can be hosted in the cloud."*
+
 ---
 
 ## 🎯 What are Vector Stores?
@@ -56,6 +58,31 @@ Vector stores are specialized databases designed to store and search **high-dime
 | 1 | [5.1-Faiss.ipynb](5.1-Faiss.ipynb) | 🚀 Facebook AI Similarity Search | Fast similarity search, L2 distance |
 | 2 | [5.2-Chroma.ipynb](5.2-Chroma.ipynb) | 🎨 AI-native vector database | Built-in persistence, metadata filtering |
 
+### 📹 Lecture Transcripts
+| File | Description |
+|------|-------------|
+| [Faiss_lecture.txt](Faiss_lecture.txt) | 📝 Complete FAISS tutorial walkthrough |
+| [chromadb_lecture.txt](chromadb_lecture.txt) | 📝 Complete Chroma DB tutorial walkthrough |
+
+---
+
+## 🔧 Installation Guide
+
+Before starting, make sure to install the required packages:
+
+```bash
+# For FAISS (CPU version - use faiss-gpu for cloud/GPU)
+pip install faiss-cpu
+
+# For Chroma (new LangChain integration)
+pip install langchain-chroma
+
+# Common dependencies
+pip install langchain langchain-community
+```
+
+> ⚠️ **Important Note**: In the previous version of Chroma, you would install `chromadb` separately. Now, LangChain has a dedicated library `langchain-chroma` that you should use instead. No need to install chromadb separately!
+
 ---
 
 ## 🔑 Key Concepts
@@ -73,6 +100,8 @@ Vector stores are specialized databases designed to store and search **high-dime
 ```
 
 **Why**: Computers can't understand text directly - embeddings allow mathematical comparison of meanings.
+
+> 💡 **Pro Tip**: You can also pass vectors directly instead of text! Use `embeddings.embed_query(query)` to get the vector, then use `similarity_search_by_vector(embedding_vector)` for more control.
 
 ### 2️⃣ Text Splitting
 
@@ -118,6 +147,36 @@ Query: "What is machine learning?"
     └────────────────────────────────────┘
 ```
 
+### 4️⃣ Retrievers - The Interface Pattern
+
+**What**: A standardized interface that connects vector stores to LLM models.
+
+> 💡 **From the Instructor**: *"Retrievers are like an interface which, whenever we put any kind of query, is connected to the vector store DB. We need to convert the vector store DB into a retriever class. This allows us to easily work with other LangChain methods which largely work with retrievers."*
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    WHY USE RETRIEVERS?                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ❌ WITHOUT RETRIEVER:                                          │
+│  ┌─────────────┐                    ┌─────────┐                 │
+│  │ Vector Store│ ──── ✗ ──────────▶ │   LLM   │                 │
+│  └─────────────┘  (Can't connect    └─────────┘                 │
+│                    directly!)                                    │
+│                                                                  │
+│  ✅ WITH RETRIEVER:                                             │
+│  ┌─────────────┐    ┌───────────┐    ┌─────────┐               │
+│  │ Vector Store│───▶│ Retriever │───▶│   LLM   │               │
+│  └─────────────┘    └───────────┘    └─────────┘               │
+│        │              (Interface)                                │
+│        ▼                   │                                     │
+│  db.as_retriever()    retriever.invoke(query)                   │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Key Point**: When working with different LLM models, you cannot directly use the vector store DB. You must first convert it into a retriever!
+
 ---
 
 ## 🆚 Vector Store Comparison
@@ -153,12 +212,17 @@ Query: "What is machine learning?"
 |---------|:-----:|:------:|
 | **Speed** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
 | **Ease of Use** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
-| **Persistence** | Manual | Built-in |
+| **Persistence** | Manual (`save_local()`) | Built-in (`persist_directory`) |
 | **Metadata Filtering** | Limited | Rich |
 | **Scalability** | Excellent | Good |
-| **GPU Support** | ✅ | ❌ |
+| **GPU Support** | ✅ (`faiss-gpu`) | ❌ |
 | **Client-Server** | ❌ | ✅ |
+| **Internal Storage** | Binary files (`.faiss`, `.pkl`) | SQLite DB (`.sqlite3`) |
 | **License** | MIT | Apache 2.0 |
+
+> 💡 **Storage Details**:
+> - **FAISS**: Saves as `index.faiss` (vectors) + `index.pkl` (metadata)
+> - **Chroma**: Creates a `chroma.sqlite3` database internally - *"Every vector is stored inside this particular DB. This can be hosted anywhere you like!"*
 
 ---
 
@@ -261,6 +325,18 @@ db = Chroma(persist_directory="./chroma_db", embedding_function=OllamaEmbeddings
 └───────────────────────────────────────────────────────────────┘
 ```
 
+> 💡 **From the Instructor**: *"The returned distance score is L2 distance, which is also called Manhattan distance. Therefore, a lower score is better. Based on that particular information, whichever is the nearest, that will be getting as the first context from that particular text file."*
+
+### Using Similarity Search with Score
+
+```python
+# Get documents WITH their similarity scores
+docs_and_scores = db.similarity_search_with_score(query)
+
+for doc, score in docs_and_scores:
+    print(f"Score: {score:.4f} - {doc.page_content[:50]}...")
+```
+
 ---
 
 ## 🚀 Best Practices
@@ -329,6 +405,32 @@ db = Chroma(persist_directory="./chroma_db", embedding_function=OllamaEmbeddings
 
 ---
 
+## 🗺️ Vector Store Ecosystem
+
+Beyond FAISS and Chroma, there are many other vector stores you'll encounter:
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                  VECTOR STORE LANDSCAPE                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  🆓 OPEN SOURCE (Local)          ☁️ CLOUD-HOSTED                │
+│  ═══════════════════════         ════════════════               │
+│  ┌─────────────────────┐         ┌─────────────────────┐        │
+│  │ • FAISS (Meta)      │         │ • Pinecone          │        │
+│  │ • Chroma            │         │ • Astra DB          │        │
+│  │ • Milvus            │         │   (Cassandra-based) │        │
+│  │ • Weaviate          │         │ • Qdrant Cloud      │        │
+│  │ • Qdrant            │         │ • Weaviate Cloud    │        │
+│  └─────────────────────┘         └─────────────────────┘        │
+│                                                                  │
+│  💡 We'll explore Astra DB and Pinecone in end-to-end projects! │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ## ✅ Learning Checklist
 
 - [ ] Understand what embeddings are and why we need them
@@ -347,9 +449,30 @@ db = Chroma(persist_directory="./chroma_db", embedding_function=OllamaEmbeddings
 After completing this module, you're ready to:
 
 1. **Build a RAG System** - Combine vector stores with LLMs
-2. **Explore Other Vector Stores** - Pinecone, Weaviate, Milvus
+2. **Explore Other Vector Stores** - Pinecone, Weaviate, Milvus, Astra DB
 3. **Implement Hybrid Search** - Combine keyword + semantic search
 4. **Add Metadata Filtering** - Filter results by custom attributes
+5. **Deploy to Cloud** - Host your vector store on cloud services
+
+---
+
+## ⚠️ Common Gotchas
+
+| Issue | Solution |
+|-------|----------|
+| 🐢 Embedding is slow locally | Use GPU (`faiss-gpu`) or cloud embedding services |
+| 📦 `chromadb` import error | Use `langchain-chroma` instead of `chromadb` directly |
+| 🔄 Can't use vector store with LLM | Convert to retriever first with `db.as_retriever()` |
+| 💾 Lost data after restart | Enable persistence: `save_local()` for FAISS, `persist_directory` for Chroma |
+| ⚡ Need faster search | Consider FAISS with GPU or use approximate nearest neighbor indexes |
+
+---
+
+## 🧪 Practice Exercises
+
+1. **Basic**: Load a text file, split it, create a FAISS index, and search for a query
+2. **Intermediate**: Compare results between FAISS and Chroma on the same dataset
+3. **Advanced**: Build a simple Q&A system using a retriever + LLM
 
 ---
 

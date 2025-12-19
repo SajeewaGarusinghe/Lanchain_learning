@@ -33,3 +33,10 @@ langchain-text-splitters
 
 # OpenAI API integration for using GPT-3.5, GPT-4, etc.
 langchain-openai
+
+chromadb
+sentence_transformers
+langchain_huggingface
+faiss-cpu
+langchain_chroma
+duckdb
