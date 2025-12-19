@@ -1,0 +1,356 @@
+# 🗄️ Vector Stores in LangChain
+
+## 📚 Overview
+
+Welcome to the **Vector Stores** module! This section covers how to store and retrieve document embeddings efficiently using vector databases - a crucial component for building semantic search and RAG (Retrieval Augmented Generation) applications.
+
+---
+
+## 🎯 What are Vector Stores?
+
+Vector stores are specialized databases designed to store and search **high-dimensional vectors** (embeddings). They enable **semantic search** - finding documents based on meaning rather than exact keyword matches.
+
+### 🧠 The Big Picture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         VECTOR STORE PIPELINE                                │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  📄 INDEXING PHASE                                                          │
+│  ════════════════                                                           │
+│                                                                              │
+│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────────────┐      │
+│  │Documents │───▶│  Text    │───▶│Embedding │───▶│   Vector Store   │      │
+│  │  (.txt,  │    │ Splitter │    │  Model   │    │  (FAISS/Chroma)  │      │
+│  │  .pdf)   │    │          │    │          │    │                  │      │
+│  └──────────┘    └──────────┘    └──────────┘    └──────────────────┘      │
+│       │               │               │                   │                 │
+│       ▼               ▼               ▼                   ▼                 │
+│   Raw Text      Chunks of       Numerical           Indexed for            │
+│                  Text           Vectors             Fast Search            │
+│                                                                              │
+│  ════════════════════════════════════════════════════════════════════════   │
+│                                                                              │
+│  🔍 RETRIEVAL PHASE                                                         │
+│  ══════════════════                                                         │
+│                                                                              │
+│  ┌──────────┐    ┌──────────┐    ┌──────────────────┐    ┌──────────┐      │
+│  │  User    │───▶│ Embedding│───▶│  Similarity      │───▶│ Relevant │      │
+│  │  Query   │    │  Model   │    │  Search          │    │ Documents│      │
+│  └──────────┘    └──────────┘    └──────────────────┘    └──────────┘      │
+│       │               │                   │                   │             │
+│       ▼               ▼                   ▼                   ▼             │
+│   "What is..."   Query Vector     Compare with all      Top K matches      │
+│                                   stored vectors                            │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📂 Notebooks in This Module
+
+| # | Notebook | Description | Key Concepts |
+|---|----------|-------------|--------------|
+| 1 | [5.1-Faiss.ipynb](5.1-Faiss.ipynb) | 🚀 Facebook AI Similarity Search | Fast similarity search, L2 distance |
+| 2 | [5.2-Chroma.ipynb](5.2-Chroma.ipynb) | 🎨 AI-native vector database | Built-in persistence, metadata filtering |
+
+---
+
+## 🔑 Key Concepts
+
+### 1️⃣ Embeddings
+
+**What**: Numerical representations of text that capture semantic meaning.
+
+```
+"I love programming" ──▶ [0.12, -0.34, 0.56, 0.78, ...]
+                              │
+                              ▼
+                        768-4096 dimensions
+                        (depending on model)
+```
+
+**Why**: Computers can't understand text directly - embeddings allow mathematical comparison of meanings.
+
+### 2️⃣ Text Splitting
+
+**What**: Breaking large documents into smaller chunks.
+
+```
+┌────────────────────────────────────────────┐
+│           Large Document                    │
+│  (10,000 characters)                        │
+└────────────────────────────────────────────┘
+                    │
+                    ▼ Text Splitter
+    ┌───────────────┼───────────────┐
+    ▼               ▼               ▼
+┌────────┐    ┌────────┐    ┌────────┐
+│ Chunk 1│    │ Chunk 2│    │ Chunk 3│
+│ (1000) │    │ (1000) │    │ (1000) │
+└────────┘    └────────┘    └────────┘
+```
+
+**Types**:
+| Splitter | Best For |
+|----------|----------|
+| `CharacterTextSplitter` | Simple, fixed-size splitting |
+| `RecursiveCharacterTextSplitter` | Preserves document structure |
+| `TokenTextSplitter` | Token-aware splitting |
+
+### 3️⃣ Similarity Search
+
+**What**: Finding the most similar vectors to a query.
+
+```
+Query: "What is machine learning?"
+         │
+         ▼ Embed
+    [0.2, 0.5, ...]
+         │
+         ▼ Compare
+    ┌────────────────────────────────────┐
+    │  Doc1: [0.2, 0.5, ...] → Score: 0.1│ ✅ Best match
+    │  Doc2: [0.3, 0.4, ...] → Score: 0.3│
+    │  Doc3: [0.8, 0.1, ...] → Score: 0.9│ ❌ Least similar
+    └────────────────────────────────────┘
+```
+
+---
+
+## 🆚 Vector Store Comparison
+
+### FAISS vs Chroma
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                    VECTOR STORE COMPARISON                       │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌─────────────────────┐       ┌─────────────────────┐          │
+│  │       FAISS         │       │       CHROMA        │          │
+│  │   (Meta AI)         │       │   (Chroma Inc)      │          │
+│  ├─────────────────────┤       ├─────────────────────┤          │
+│  │ ⚡ Ultra-fast       │       │ 🎯 Developer-friendly│          │
+│  │ 🔢 Billions vectors │       │ 💾 Built-in persist │          │
+│  │ 🧮 Multiple indexes │       │ 🏷️ Rich metadata    │          │
+│  │ 📈 Production-ready │       │ 🔌 Easy setup       │          │
+│  └─────────────────────┘       └─────────────────────┘          │
+│                                                                  │
+│  BEST FOR:                     BEST FOR:                        │
+│  • Large-scale search          • Rapid prototyping              │
+│  • Performance-critical apps   • Metadata filtering             │
+│  • Massive datasets            • Small-medium datasets          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Feature Matrix
+
+| Feature | FAISS | Chroma |
+|---------|:-----:|:------:|
+| **Speed** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| **Ease of Use** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **Persistence** | Manual | Built-in |
+| **Metadata Filtering** | Limited | Rich |
+| **Scalability** | Excellent | Good |
+| **GPU Support** | ✅ | ❌ |
+| **Client-Server** | ❌ | ✅ |
+| **License** | MIT | Apache 2.0 |
+
+---
+
+## 🔄 Common Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         RAG (Retrieval Augmented Generation)                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│   1. LOAD              2. SPLIT            3. EMBED            4. STORE     │
+│   ═══════             ═══════════         ═════════           ═══════════   │
+│   ┌──────┐            ┌──────────┐        ┌────────┐          ┌─────────┐   │
+│   │ PDF  │            │ Chunked  │        │Vectors │          │ Vector  │   │
+│   │ TXT  │───────────▶│  Text    │───────▶│ [...]  │─────────▶│  Store  │   │
+│   │ Web  │            │          │        │        │          │         │   │
+│   └──────┘            └──────────┘        └────────┘          └─────────┘   │
+│                                                                     │        │
+│                                                                     ▼        │
+│   5. RETRIEVE         6. AUGMENT          7. GENERATE                       │
+│   ═══════════         ══════════          ═══════════                       │
+│   ┌──────────┐        ┌──────────┐        ┌─────────┐                       │
+│   │ Relevant │        │ Query +  │        │  LLM    │                       │
+│   │   Docs   │◀──────▶│ Context  │───────▶│Response │                       │
+│   │          │        │          │        │         │                       │
+│   └──────────┘        └──────────┘        └─────────┘                       │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🛠️ Quick Start Code
+
+### FAISS Example
+```python
+from langchain_community.vectorstores import FAISS
+from langchain_community.embeddings import OllamaEmbeddings
+
+# Create
+db = FAISS.from_documents(docs, OllamaEmbeddings())
+
+# Search
+results = db.similarity_search("your query")
+
+# Persist
+db.save_local("faiss_index")
+```
+
+### Chroma Example
+```python
+from langchain_chroma import Chroma
+from langchain_community.embeddings import OllamaEmbeddings
+
+# Create (with persistence)
+db = Chroma.from_documents(
+    docs, 
+    OllamaEmbeddings(),
+    persist_directory="./chroma_db"
+)
+
+# Search
+results = db.similarity_search("your query")
+
+# Load later
+db = Chroma(persist_directory="./chroma_db", embedding_function=OllamaEmbeddings())
+```
+
+---
+
+## 📊 Understanding Similarity Scores
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│                    DISTANCE METRICS                            │
+├───────────────────────────────────────────────────────────────┤
+│                                                                │
+│  L2 (Euclidean) Distance - Used by FAISS & Chroma            │
+│  ═══════════════════════════════════════════════              │
+│                                                                │
+│  Score = 0.0   ──▶  🎯 Perfect match (identical)              │
+│  Score < 0.5   ──▶  🟢 Very similar                           │
+│  Score < 1.0   ──▶  🟡 Somewhat similar                       │
+│  Score > 1.5   ──▶  🔴 Not very similar                       │
+│                                                                │
+│  ⚠️ LOWER score = BETTER match                                │
+│                                                                │
+│  ────────────────────────────────────────────────────────     │
+│                                                                │
+│  Cosine Similarity (alternative metric)                       │
+│  ════════════════════════════════════════                     │
+│                                                                │
+│  Score = 1.0   ──▶  🎯 Perfect match                          │
+│  Score > 0.8   ──▶  🟢 Very similar                           │
+│  Score > 0.5   ──▶  🟡 Somewhat similar                       │
+│  Score < 0.5   ──▶  🔴 Not similar                            │
+│                                                                │
+│  ⚠️ HIGHER score = BETTER match                               │
+│                                                                │
+└───────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🚀 Best Practices
+
+### 1. Chunk Size Selection
+```
+┌─────────────────────────────────────────────────────────────┐
+│  CHUNK SIZE TRADE-OFFS                                       │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Small Chunks (100-500 chars)                               │
+│  ├─ ✅ More precise retrieval                               │
+│  ├─ ✅ Less noise in results                                │
+│  └─ ❌ May lose context                                     │
+│                                                              │
+│  Large Chunks (1000-2000 chars)                             │
+│  ├─ ✅ More context preserved                               │
+│  ├─ ✅ Fewer chunks to search                               │
+│  └─ ❌ May include irrelevant info                          │
+│                                                              │
+│  💡 Recommendation: Start with 500-1000 and adjust          │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 2. Embedding Model Selection
+
+| Model | Dimensions | Speed | Quality | Use Case |
+|-------|-----------|-------|---------|----------|
+| Ollama (local) | ~4096 | Medium | Good | Privacy, offline |
+| OpenAI ada-002 | 1536 | Fast | Excellent | Production |
+| HuggingFace | Varies | Medium | Good | Custom needs |
+
+### 3. When to Use Which?
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  DECISION TREE: Choosing a Vector Store                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  Need to handle billions of vectors?                        │
+│  ├─ YES ──▶ Use FAISS                                       │
+│  └─ NO                                                       │
+│       │                                                      │
+│       ▼                                                      │
+│  Need rich metadata filtering?                              │
+│  ├─ YES ──▶ Use Chroma                                      │
+│  └─ NO                                                       │
+│       │                                                      │
+│       ▼                                                      │
+│  Prototyping or small dataset?                              │
+│  ├─ YES ──▶ Use Chroma (easier setup)                       │
+│  └─ NO ──▶ Use FAISS (better performance)                   │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 📚 Additional Resources
+
+- 📖 [LangChain Vector Stores Documentation](https://python.langchain.com/docs/modules/data_connection/vectorstores/)
+- 🔗 [FAISS GitHub](https://github.com/facebookresearch/faiss)
+- 🎨 [Chroma Documentation](https://docs.trychroma.com/)
+- 📺 [Vector Databases Explained (YouTube)](https://www.youtube.com/watch?v=klTvEwg3oJ4)
+
+---
+
+## ✅ Learning Checklist
+
+- [ ] Understand what embeddings are and why we need them
+- [ ] Learn different text splitting strategies
+- [ ] Create a FAISS vector store from documents
+- [ ] Create a Chroma vector store with persistence
+- [ ] Perform similarity search with scores
+- [ ] Convert vector stores to retrievers
+- [ ] Save and load vector stores from disk
+- [ ] Choose the right vector store for your use case
+
+---
+
+## 🎯 Next Steps
+
+After completing this module, you're ready to:
+
+1. **Build a RAG System** - Combine vector stores with LLMs
+2. **Explore Other Vector Stores** - Pinecone, Weaviate, Milvus
+3. **Implement Hybrid Search** - Combine keyword + semantic search
+4. **Add Metadata Filtering** - Filter results by custom attributes
+
+---
+
+*Happy Learning! 🚀*
