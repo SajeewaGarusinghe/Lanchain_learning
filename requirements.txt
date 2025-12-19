@@ -27,3 +27,9 @@ wikipedia
 
 # Twitter API client - for loading tweets (used in tweetloader notebook)
 tweepy
+
+# Text splitting utilities for breaking documents into smaller chunks
+langchain-text-splitters
+
+# OpenAI API integration for using GPT-3.5, GPT-4, etc.
+langchain-openai
